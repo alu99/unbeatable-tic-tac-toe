@@ -3,6 +3,8 @@ import java.util.Scanner;
 public class UnbeatableTicTacToe {
 
 	private char[][] board;
+	private boolean[] playedMoves;
+	private int remainingMoves;
 	private int lastCompMove;
 	private int strategy;
 
@@ -10,9 +12,37 @@ public class UnbeatableTicTacToe {
 	public UnbeatableTicTacToe(){
 
 		board = new char[3][3]; //3x3 matrix representing the tic-tac-toe board
+		playedMoves = new boolean[9];
+		remainingMoves = 9;
 		lastCompMove = -1; //tracks whos turn it is
 		strategy = -1;
 		playerMove();
+	}
+	
+	private void setMoveToPlayed(int x, int y, char symbol) {
+		playedMoves[3*x + y] = true;
+		board[x][y] = symbol;
+		remainingMoves -= 1;
+		
+		if(symbol == 'o')
+			lastCompMove = x*10 + y;
+	}
+	
+	private boolean checkIfMovePlayed(int x, int y) {
+		return playedMoves[3*x + y];
+	}
+	
+	//gets an arbitrary unplayed move if computer runs out of strategized moves
+	private int[] getArbitraryUnplayedMove() {
+		for(int i = 0; i < 9; i++) {
+			if(!playedMoves[i]) {
+				int[] toReturn = new int[2];
+				toReturn[0] = i/3;
+				toReturn[1] = i%3;
+				return toReturn;
+			}
+		}
+		return null;
 	}
 
 	//displays the current state of the board
@@ -55,7 +85,7 @@ public class UnbeatableTicTacToe {
 		int yCoord = Integer.parseInt(coords.substring(2));
 
 		if(isValid(xCoord, yCoord))
-			board[xCoord][yCoord] = 'x';
+			setMoveToPlayed(xCoord, yCoord, 'x');
 
 		else{
 
@@ -63,6 +93,11 @@ public class UnbeatableTicTacToe {
 			playerMove();
 		}
 
+		if(remainingMoves == 0) {
+			System.out.print("DRAW\n");
+			displayBoard();
+			System.exit(0);
+		}
 		compMove(xCoord, yCoord);
 	}
 
@@ -74,8 +109,8 @@ public class UnbeatableTicTacToe {
 
 		if(y > 2 || y < 0)
 			return false;
-
-		if(board[x][y] != '\u0000')
+		
+		if(checkIfMovePlayed(x, y))
 			return false;
 
 		return true;
@@ -94,12 +129,27 @@ public class UnbeatableTicTacToe {
 			int compy = lastCompMove%10; //gets y coordinate of last computer move
 			
 			//computer wins if it can get 3 in a row on it's turn
-			if(needsBlock(compx, compy, 'x', 'o'))
-				System.out.println("comp win");
-				
+			if(needsBlock(compx, compy, 'x', 'o')) {
+				System.out.println("COMPUTER WINS\n");
+				displayBoard();
+				System.exit(0);
+			}
+							
 			//strategy for when user's first move is in center
 			if(strategy == 2){
-				needsBlock(playerx, playery, 'o', 'x');
+				if(!needsBlock(playerx, playery, 'o', 'x')) {
+					if(isValid(0,2))
+						setMoveToPlayed(0, 2, 'o');
+					else if(isValid(2,0))
+						setMoveToPlayed(2, 0, 'o');
+					else if(isValid(2,2))
+						setMoveToPlayed(2, 2, 'o');
+					else {
+						int[] move = getArbitraryUnplayedMove();
+						board[move[0]][move[1]] =  'o';
+						setMoveToPlayed(move[0], move[1], 'o');
+					}
+				}
 			}
 
 			//strategy for when user's first move is in corner
@@ -108,13 +158,18 @@ public class UnbeatableTicTacToe {
 				if(!needsBlock(playerx, playery, 'o', 'x')){
 
 					if(isValid(1,0))
-						board[1][0] = 'o';
+						setMoveToPlayed(1, 0, 'o');
 					else if(isValid(1,2))
-						board[1][2] = 'o';
+						setMoveToPlayed(1, 2, 'o');
 					else if(isValid(0,1))
-						board[0][1] = 'o';
+						setMoveToPlayed(0, 1, 'o');
 					else if(isValid(2,1))
-						board[2][1] = 'o';
+						setMoveToPlayed(2, 1, 'o');
+					else {
+						int[] move = getArbitraryUnplayedMove();
+						board[move[0]][move[1]] =  'o';
+						setMoveToPlayed(move[0], move[1], 'o');
+					}
 				}
 
 			}
@@ -124,15 +179,25 @@ public class UnbeatableTicTacToe {
 				//if player doesn't need to be blocked, play in corner
 				if(!needsBlock(playerx, playery, 'o', 'x')){
 					if(isValid(0,0))
-						board[0][0] = 'o';
+						setMoveToPlayed(0, 0, 'o');
 					else if(isValid(2,0))
-						board[2][0] = 'o';
+						setMoveToPlayed(2, 0, 'o');
 					else if(isValid(0,2))
-						board[0][2] = 'o';
+						setMoveToPlayed(0, 2, 'o');
 					else if(isValid(2,2))
-						board[2][2] = 'o';
+						setMoveToPlayed(2, 2, 'o');
+					else {
+						int[] move = getArbitraryUnplayedMove();
+						board[move[0]][move[1]] =  'o';
+						setMoveToPlayed(move[0], move[1], 'o');
+					}
 				}
 			}
+		}
+		if(remainingMoves == 0) {
+			System.out.print("DRAW\n");
+			displayBoard();
+			System.exit(0);
 		}
 		playerMove();
 	}
@@ -143,14 +208,14 @@ public class UnbeatableTicTacToe {
 		//if player puts x in center, place o in top left
 		if(playerx == 1 && playery == 1){
 
-			board[0][0] = 'o';
+			setMoveToPlayed(0, 0, 'o');
 			lastCompMove = 00; //stores last move in an int (in this case, last move is (0,0))
 			strategy = 2;
 		}
 
 		//otherwise, place o in center
 		else{
-			board[1][1] = 'o';
+			setMoveToPlayed(1, 1, 'o');
 			lastCompMove = 11;
 
 			//if the player puts x in a corner, initiate strategy 0
@@ -177,7 +242,7 @@ public class UnbeatableTicTacToe {
 			if(board[movex][col] == symbolCheck)
 				numConsec ++;
 
-			if(board[movex][col] == '\u0000')
+			if(!checkIfMovePlayed(movex, col))
 				emptySpaceCoord = col;
 
 			col++;
@@ -185,8 +250,7 @@ public class UnbeatableTicTacToe {
 
 		//needs to block player from getting 3 in a row
 		if(numConsec == 2 && col ==3){
-
-			board[movex][emptySpaceCoord] = 'o';
+			setMoveToPlayed(movex, emptySpaceCoord, 'o');
 			return true;
 		}
 
@@ -200,7 +264,7 @@ public class UnbeatableTicTacToe {
 			if(board[row][movey] == symbolCheck)
 				numConsec ++;
 
-			if(board[row][movey] == '\u0000')
+			if(!checkIfMovePlayed(row, movey))
 				emptySpaceCoord = row;
 
 			row++;
@@ -208,8 +272,7 @@ public class UnbeatableTicTacToe {
 
 		//needs block
 		if(numConsec == 2 && row ==3){
-
-			board[emptySpaceCoord][movey] = 'o';
+			setMoveToPlayed(emptySpaceCoord, movey, 'o');
 			return true;
 		}
 
@@ -245,14 +308,13 @@ public class UnbeatableTicTacToe {
 		int numConsec = 0;
 		int emptySpaceCoord = 0;
 
-		while(coord < 3 && board[coord][coord] != 'o'){
+		while(coord < 3 && board[coord][coord] != symbolAvoid){
 
 			if(board[coord][coord] == symbolCheck)
 				numConsec ++;
 
-			if(board[coord][coord] == '\u0000')
+			if(!checkIfMovePlayed(coord,coord))
 				emptySpaceCoord = coord;
-
 
 			coord++;
 		}
@@ -268,12 +330,12 @@ public class UnbeatableTicTacToe {
 		int emptySpaceX = 0;
 		int emptySpaceY = 0;
 
-		while(coord >= 0 && board[2-coord][coord] != 'o'){
+		while(coord >= 0 && board[2-coord][coord] != symbolAvoid){
 
 			if(board[2-coord][coord] == symbolCheck)
 				numConsec ++;
 
-			if(board[2-coord][coord] == '\u0000'){
+			if(!checkIfMovePlayed(2-coord,coord)){
 				emptySpaceX = 2-coord;
 				emptySpaceY = coord;
 			}
@@ -287,14 +349,13 @@ public class UnbeatableTicTacToe {
 	//helps with diagonal/anti-diagonal needs block
 	private boolean blockHelper(int numConsec, int coord, int emptySpaceX, int emptySpaceY, char symbolAvoid, char symbolCheck){
 
-		if(numConsec == 2 && coord ==3){
-
-			board[emptySpaceX][emptySpaceY] = 'o';
+		if(numConsec == 2 && coord == 3){
+			
+			setMoveToPlayed(emptySpaceX, emptySpaceY, 'o');
 			return true;
 		}
 
 		return false;
-
 	}
 	public static void main(String[] args){
 
