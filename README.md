@@ -1,5 +1,5 @@
 # unbeatable-tic-tac-toe
-A tic-tac-toe Java program that cannot be beat
+A tic-tac-toe Java program I made for fun that cannot be beat
 
 ## About the strategy
 The program uses 1 of 3 core strategies based off of the player's first move.
